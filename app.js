@@ -204,12 +204,12 @@ async function loadExpenses(tripId) {
   }
   state.expenses = data || [];
 
-  // Rebuild lastRates from most recent entry per currency
+  // Rebuild lastRates — tripRates as baseline, expense history on top
   const rates = {};
   for (const e of state.expenses) {
     if (!(e.foreign_currency in rates)) rates[e.foreign_currency] = e.exchange_rate;
   }
-  state.lastRates = rates;
+  state.lastRates = { ...state.tripRates, ...rates };
 }
 
 async function saveExpense(form) {
@@ -494,4 +494,4 @@ window.AppData = {
   updateExpense,
 };
 
-document.addEventListener("DOMContentLoaded", init);
+document.add
