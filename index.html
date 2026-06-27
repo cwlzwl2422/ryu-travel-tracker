@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="Ryu Travel" />
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="styles.css?v=3" />
 
 <!-- Supabase JS client -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -19,9 +19,9 @@
 <div id="app-root"></div>
 
 <!-- Load order matters: config → app (data/logic) → ui (rendering) -->
-<script src="config.js"></script>
-<script src="app.js"></script>
-<script src="ui.js"></script>
+<script src="config.js?v=3"></script>
+<script src="app.js?v=3"></script>
+<script src="ui.js?v=3"></script>
 
 <!-- Register Service Worker for PWA install -->
 <script>
