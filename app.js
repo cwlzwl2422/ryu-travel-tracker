@@ -135,6 +135,14 @@ async function setActiveTrip(tripId) {
   await supabaseClient.from("trips").update({ is_active: false }).eq("user_id", state.user.id);
   await supabaseClient.from("trips").update({ is_active: true }).eq("id", tripId);
   await loadTrips();
+  render();
+}
+
+async function deleteTrip(tripId) {
+  const { error } = await supabaseClient.from("trips").delete().eq("id", tripId);
+  if (error) { alert("Could not delete trip: " + error.message); return; }
+  await loadTrips();
+  render();
 }
 
 // ============================================================
@@ -468,6 +476,7 @@ window.AppData = {
   signOut,
   createTrip,
   setActiveTrip,
+  deleteTrip,
   saveExpense,
   deleteExpense,
   scanReceipt,

@@ -76,7 +76,6 @@ function renderBottomNav(activeView) {
   // "trips" is the home screen — shows all trips, create/switch trip
   const items = [
     { view: "trips",    label: "Home"     },
-    { view: "add",      label: "Add"      },
     { view: "history",  label: "History"  },
     { view: "settings", label: "Settings" },
   ];
@@ -165,15 +164,25 @@ function renderTrips() {
     const card = document.createElement("div");
     card.className = "trip-card" + (t.is_active ? " trip-card--active" : "");
     card.innerHTML = `
-      <div>
+      <div style="flex:1;min-width:0;">
         <div style="font-weight:600;font-size:14.5px;">${escapeHtml(t.trip_name)}</div>
         <div class="muted" style="font-size:12.5px;margin-top:2px;">${escapeHtml(t.destination_country || "")}</div>
       </div>
-      ${t.is_active ? '<span class="badge">Active</span>' : '<button class="btn btn--small">Switch</button>'}
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+        ${t.is_active
+          ? '<span class="badge">Active</span>'
+          : '<button class="btn btn--small trip-switch-btn">Switch</button>'}
+        <button class="btn btn--small trip-delete-btn" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5;">Delete</button>
+      </div>
     `;
     if (!t.is_active) {
-      card.querySelector("button").onclick = () => window.AppData.setActiveTrip(t.id);
+      card.querySelector(".trip-switch-btn").onclick = () => window.AppData.setActiveTrip(t.id);
     }
+    card.querySelector(".trip-delete-btn").onclick = () => {
+      if (confirm("Delete \"" + t.trip_name + "\"? This will also delete all its expenses.")) {
+        window.AppData.deleteTrip(t.id);
+      }
+    };
     list.appendChild(card);
   });
 
@@ -786,11 +795,29 @@ function renderSettings() {
   el.querySelector("#s-signout").onclick = () => window.AppData.signOut();
   el.querySelector("#s-export").onclick = () => window.AppData.exportCSV();
   el.querySelector("#s-install").onclick = () => window.AppData.installApp();
-  el.querySelector("#s-rates").onclick = () => { state.view = "rates"; render(); };
   el.querySelector("#s-trips").onclick = () => { state.view = "trips"; render(); };
 
-  const settingsSpacer = document.createElement("div"); settingsSpacer.className = "bottom-nav__spacer";
-  el.appendChild(settingsSpacer);
   el.appendChild(renderBottomNav("settings"));
   return el;
 }
+
+// ============================================================
+// RENDER ROUTER
+// ============================================================
+function render() {
+  const root = document.getElementById("app-root");
+  if (!root) return;
+  root.innerHTML = "";
+  switch (state.view) {
+    case "login":    root.appendChild(renderLogin());      break;
+    case "trips":    root.appendChild(renderTrips());      break;
+    case "dashboard":root.appendChild(renderDashboard());  break;
+    case "add":      root.appendChild(renderAddExpense()); break;
+    case "history":  root.appendChild(renderHistory());    break;
+    case "rates":    root.appendChild(renderRates());      break;
+    case "settings": root.appendChild(renderSettings());   break;
+    default:         root.appendChild(renderDashboard());
+  }
+}
+
+window.render = render;
