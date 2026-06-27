@@ -243,30 +243,39 @@ function renderDashboard() {
   `;
 
   const catList = el.querySelector("#cat-list");
-  const maxAmt = byCategory[0]?.amt || 1;
-  byCategory.forEach(({ cat, amt, meta }) => {
-    const row = document.createElement("div");
-    row.className = "cat-row";
-    row.innerHTML = `
-      <div class="cat-row__emoji">${meta?.emoji || "📌"}</div>
-      <div style="flex:1">
-        <div class="cat-row__top"><span>${meta?.label || cat}</span><span class="num">${formatSGD(amt)}</span></div>
-        <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(100, (amt / maxAmt) * 100)}%"></div></div>
-      </div>
-    `;
-    catList.appendChild(row);
-  });
+  if (byCategory.length === 0) {
+    catList.innerHTML = `<div class="muted" style="font-size:13px;padding:10px 0;">No expenses yet — tap + Add expense to start.</div>`;
+  } else {
+    const maxAmt = byCategory[0]?.amt || 1;
+    byCategory.forEach(({ cat, amt, meta }) => {
+      const row = document.createElement("div");
+      row.className = "cat-row";
+      row.innerHTML = `
+        <div class="cat-row__emoji">${meta?.emoji || "📌"}</div>
+        <div style="flex:1">
+          <div class="cat-row__top"><span>${meta?.label || cat}</span><span class="num">${formatSGD(amt)}</span></div>
+          <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(100, (amt / maxAmt) * 100)}%"></div></div>
+        </div>
+      `;
+      catList.appendChild(row);
+    });
+  }
 
   const curList = el.querySelector("#cur-list");
-  Object.entries(byCurrency).forEach(([code, v]) => {
-    const row = document.createElement("div");
-    row.className = "cur-row";
-    row.innerHTML = `
-      <div><span class="cur-code">${code}</span> <span class="num muted">${v.foreign.toLocaleString()} ${code}</span></div>
-      <span class="num" style="font-weight:600;">${formatSGD(v.sgd)}</span>
-    `;
-    curList.appendChild(row);
-  });
+  const curEntries = Object.entries(byCurrency);
+  if (curEntries.length === 0) {
+    curList.innerHTML = `<div class="muted" style="font-size:13px;padding:10px 0;">Currency breakdown will appear after your first expense.</div>`;
+  } else {
+    curEntries.forEach(([code, v]) => {
+      const row = document.createElement("div");
+      row.className = "cur-row";
+      row.innerHTML = `
+        <div><span class="cur-code">${code}</span> <span class="num muted">${v.foreign.toLocaleString()} ${code}</span></div>
+        <span class="num" style="font-weight:600;">${formatSGD(v.sgd)}</span>
+      `;
+      curList.appendChild(row);
+    });
+  }
 
   el.querySelector("#add-btn").onclick = () => { state.view = "add"; state.scanResult = null; render(); };
   el.querySelector("#history-btn").onclick = () => { state.view = "history"; render(); };
@@ -808,10 +817,9 @@ function render() {
   const root = document.getElementById("app-root");
   if (!root) return;
   root.innerHTML = "";
+  if (!state.user) { root.appendChild(renderLogin()); return; }
   switch (state.view) {
-    case "login":    root.appendChild(renderLogin());      break;
     case "trips":    root.appendChild(renderTrips());      break;
-    case "dashboard":root.appendChild(renderDashboard());  break;
     case "add":      root.appendChild(renderAddExpense()); break;
     case "history":  root.appendChild(renderHistory());    break;
     case "rates":    root.appendChild(renderRates());      break;

@@ -159,9 +159,11 @@ html, body {
 .bottom-nav__item {
   flex: 1; display: flex; flex-direction: column; align-items: center;
   justify-content: center; gap: 3px; padding: 10px 4px 12px;
-  cursor: pointer; background: none; border: none; color: #8A9BBF;
-  font-family: inherit; font-size: 10px; font-weight: 600;
+  cursor: pointer; background: none; border: none; outline: none;
+  -webkit-appearance: none; appearance: none;
+  color: #8A9BBF; font-family: inherit; font-size: 10px; font-weight: 600;
   letter-spacing: 0.04em; text-transform: uppercase;
+  min-width: 0; box-sizing: border-box;
 }
 .bottom-nav__item--active { color: #C9A96E; }
 .bottom-nav__icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
@@ -173,6 +175,4 @@ html, body {
 .history-row--selected {
   border-color: #C9A96E !important; background: #FBF3E2 !important;
 }
-.history-row--selected .row-dot {
-  background: #C9A96E !important; border-color: #C9A96E !important;
-}
+.hi
