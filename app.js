@@ -426,6 +426,40 @@ function formatSGD(n) {
   return "S$" + n.toLocaleString("en-SG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// PWA install prompt
+let pwaPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  pwaPrompt = e;
+});
+
+function installApp() {
+  if (pwaPrompt) {
+    pwaPrompt.prompt();
+    pwaPrompt.userChoice.then(() => { pwaPrompt = null; });
+  } else {
+    alert("Install: On Chrome tap the install icon in the address bar. On iPhone use Safari Share then Add to Home Screen.");
+  }
+}
+
+function exportCSV() {
+  if (!state.expenses.length) { alert("No expenses to export."); return; }
+  const headers = ["Date","Category","Merchant","Description","Foreign Amount","Currency","Exchange Rate","SGD Amount","Payment Method","Business Expense"];
+  const rows = state.expenses.map((e) => [
+    e.expense_date || "", e.category || "", e.merchant_name || "", e.description || "",
+    e.foreign_amount || "", e.foreign_currency || "", e.exchange_rate || "", e.home_amount || "",
+    e.payment_method || "", e.is_business_expense ? "Yes" : "No",
+  ].map((v) => '"' + String(v).replace(/"/g, '""') + '"').join(","));
+  const csv = [headers.join(","), ...rows].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const tripName = (state.activeTrip ? state.activeTrip.trip_name : "expenses").replace(/\s+/g, "_");
+  a.href = url; a.download = tripName + "_expenses.csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 window.AppData = {
   state,
   init,
