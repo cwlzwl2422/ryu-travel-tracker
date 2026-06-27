@@ -185,6 +185,17 @@ function renderTrips() {
         <button class="btn btn--small trip-delete-btn" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5;">Delete</button>
       </div>
     `;
+    // Clicking the card itself navigates to dashboard (active) or switches trip (inactive)
+    card.style.cursor = "pointer";
+    card.onclick = (e) => {
+      if (e.target.closest("button")) return; // don't intercept button clicks
+      if (t.is_active) {
+        state.view = "dashboard";
+        render();
+      } else {
+        window.AppData.setActiveTrip(t.id);
+      }
+    };
     if (!t.is_active) {
       card.querySelector(".trip-switch-btn").onclick = () => window.AppData.setActiveTrip(t.id);
     }
