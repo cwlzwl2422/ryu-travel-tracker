@@ -13,4 +13,23 @@
 <link rel="stylesheet" href="styles.css" />
 
 <!-- Supabase JS client -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<div id="app-root"></div>
+
+<!-- Load order matters: config → app (data/logic) → ui (rendering) -->
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="ui.js"></script>
+
+<!-- Register Service Worker for PWA install -->
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
