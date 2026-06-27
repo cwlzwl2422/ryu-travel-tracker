@@ -4,7 +4,7 @@
 // Supabase API calls always go to the network (no offline data).
 // ============================================================
 
-const CACHE   = "ryu-travel-v13";
+const CACHE   = "ryu-travel-v14";
 const SHELL   = [
   "./",
   "./index.html",

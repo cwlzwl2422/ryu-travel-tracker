@@ -16,6 +16,13 @@ function escapeHtml(str) {
     .replace(/'/g, "&#39;");
 }
 
+function escapeAttr(str) {
+  return String(str == null ? "" : str)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function fmtDateRange(start, end) {
   if (!start) return "";
   const fmt = (d) => new Date(d + "T00:00:00").toLocaleDateString("en-SG", { day: "numeric", month: "short", year: "numeric" });
@@ -137,7 +144,10 @@ function renderTrips() {
   el.className = "screen";
   el.innerHTML = `
     <div class="topbar">
-      <h2 class="serif-h2">Your trips</h2>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="color:#C9A96E;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+        <h2 class="serif-h2" style="margin:0;">Your trips</h2>
+      </div>
       <button id="signout-btn" class="link-btn">Sign out</button>
     </div>
     <div id="trip-list" style="margin-top:16px;display:flex;flex-direction:column;gap:10px;"></div>
@@ -628,10 +638,13 @@ function renderRates() {
         "<div style=\"font-size:11px;color:#8A7B5C;\">" + name + "</div>" +
       "</div>" +
       "<div style=\"display:flex;align-items:center;gap:6px;\">" +
-        "<span style=\"font-size:12px;color:#8A7B5C;white-space:nowrap;\">1 " + cur + " =</span>" +
+        "<input data-from=\"" + cur + "\" type=\"number\" min=\"0.01\" step=\"any\" class=\"input from-input\"" +
+          " value=\"1\" placeholder=\"1\"" +
+          " style=\"width:60px;padding:8px 8px;text-align:right;font-size:14px;margin:0;\" />" +
+        "<span style=\"font-size:12px;color:#8A7B5C;white-space:nowrap;\">" + cur + " =</span>" +
         "<input data-cur=\"" + cur + "\" type=\"number\" min=\"0\" step=\"any\" class=\"input rate-input\"" +
           " value=\"" + val + "\" placeholder=\"0.00\"" +
-          " style=\"width:90px;padding:8px 10px;text-align:right;font-size:14px;margin:0;\" />" +
+          " style=\"width:80px;padding:8px 8px;text-align:right;font-size:14px;margin:0;\" />" +
         "<span style=\"font-size:12px;color:#8A7B5C;\">SGD</span>" +
       "</div>";
     container.appendChild(row);
@@ -640,8 +653,9 @@ function renderRates() {
   el.querySelector("#rc-save-btn").onclick = function() {
     var rates = {};
     el.querySelectorAll(".rate-input").forEach(function(inp) {
-      var v = parseFloat(inp.value);
-      if (v > 0) rates[inp.dataset.cur] = v;
+      var sgd  = parseFloat(inp.value);
+      var from = parseFloat(el.querySelector(".from-input[data-from=\"" + inp.dataset.cur + "\"]").value) || 1;
+      if (sgd > 0) rates[inp.dataset.cur] = sgd / from;
     });
     if (!Object.keys(rates).length) { alert("Enter at least one rate."); return; }
     window.AppData.saveTripRates(rates);
