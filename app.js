@@ -352,4 +352,60 @@ function fileToBase64(file) {
 }
 
 // ============================================================
-// DERIVED DATA (mirrors the prototype's 
+// DERIVED DATA
+// ============================================================
+function getTotals() {
+  const totalSGD = state.expenses.reduce((s, e) => s + Number(e.home_amount), 0);
+  const businessSGD = state.expenses
+    .filter((e) => e.is_business_expense)
+    .reduce((s, e) => s + Number(e.home_amount), 0);
+  return { totalSGD, businessSGD };
+}
+
+function getByCategory() {
+  const map = {};
+  for (const e of state.expenses) {
+    map[e.category] = (map[e.category] || 0) + Number(e.home_amount);
+  }
+  return Object.entries(map)
+    .map(([cat, amt]) => ({ cat, amt, meta: CATEGORIES.find((c) => c.id === cat) }))
+    .sort((a, b) => b.amt - a.amt);
+}
+
+function getByCurrency() {
+  const map = {};
+  for (const e of state.expenses) {
+    if (!map[e.foreign_currency]) map[e.foreign_currency] = { foreign: 0, sgd: 0 };
+    map[e.foreign_currency].foreign += Number(e.foreign_amount);
+    map[e.foreign_currency].sgd += Number(e.home_amount);
+  }
+  return map;
+}
+
+function formatSGD(n) {
+  return "S$" + n.toLocaleString("en-SG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+window.AppData = {
+  state,
+  init,
+  signIn,
+  signUp,
+  signOut,
+  createTrip,
+  setActiveTrip,
+  saveExpense,
+  deleteExpense,
+  scanReceipt,
+  getReceiptSignedUrl,
+  getTotals,
+  getByCategory,
+  getByCurrency,
+  formatSGD,
+  CATEGORIES,
+  CURRENCY_PRESETS,
+  saveTripRates,
+  loadTripRates,
+};
+
+document.addEventListener("DOMContentLoaded", init);
