@@ -6,6 +6,22 @@
 
 // state, formatSGD, CATEGORIES, CURRENCY_PRESETS are already global from app.js
 
+// ── Utility helpers ──────────────────────────────────────────
+function escapeHtml(str) {
+  return String(str == null ? "" : str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function fmtDateRange(start, end) {
+  if (!start) return "";
+  const fmt = (d) => new Date(d + "T00:00:00").toLocaleDateString("en-SG", { day: "numeric", month: "short", year: "numeric" });
+  return end ? `${fmt(start)} – ${fmt(end)}` : fmt(start);
+}
+
 function render() {
   const root = document.getElementById("app-root");
   root.innerHTML = "";
