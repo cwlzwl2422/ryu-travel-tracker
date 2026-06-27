@@ -236,6 +236,7 @@ function renderDashboard() {
 
     <div style="display:flex;gap:10px;margin-top:16px;">
       <button id="add-btn" class="btn btn--primary" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;">+ Add expense</button>
+      <button id="summary-btn" class="btn btn--outline">📊 Summary</button>
       <button id="history-btn" class="btn btn--outline">History</button>
       <button id="rates-btn" class="btn btn--outline">💱 Rates</button>
     </div>
@@ -288,6 +289,7 @@ function renderDashboard() {
   }
 
   el.querySelector("#add-btn").onclick = () => { state.view = "add"; state.scanResult = null; render(); };
+  el.querySelector("#summary-btn").onclick = () => { state.view = "summary"; render(); };
   el.querySelector("#history-btn").onclick = () => { state.view = "history"; render(); };
   el.querySelector("#rates-btn").onclick = () => { state.view = "rates"; render(); };
   el.querySelector("#trips-btn").onclick = () => { state.view = "trips"; render(); };
@@ -671,6 +673,129 @@ function renderRates() {
 }
 
 // ============================================================
+// TRIP SUMMARY
+// ============================================================
+function renderSummary() {
+  const { getTotals, getByCategory, getByCurrency, formatSGD } = window.AppData;
+  const { totalSGD, businessSGD } = getTotals();
+  const personalSGD = totalSGD - businessSGD;
+  const byCategory  = getByCategory();
+  const byCurrency  = getByCurrency();
+  const trip = state.activeTrip;
+  const count = state.expenses.length;
+
+  // Daily average
+  let days = 0;
+  if (trip && trip.start_date && trip.end_date) {
+    days = Math.max(1, Math.round((new Date(trip.end_date) - new Date(trip.start_date)) / 86400000) + 1);
+  }
+  const dailyAvg = days > 0 ? totalSGD / days : 0;
+
+  const el = document.createElement("div");
+  el.className = "screen";
+  el.innerHTML = `
+    <div class="topbar">
+      <button class="icon-btn" id="summary-back">&#8592;</button>
+      <div>
+        <div class="eyebrow">Trip Summary</div>
+        <h2 class="serif-h2" style="margin:0;">${escapeHtml(trip ? trip.trip_name : "")}</h2>
+      </div>
+    </div>
+
+    <!-- Hero total -->
+    <div style="background:linear-gradient(135deg,#1B2A4A 0%,#2C4270 100%);border-radius:20px;padding:28px 24px;margin-top:18px;text-align:center;color:#fff;">
+      <div style="font-size:12px;font-weight:700;letter-spacing:0.1em;color:#C9A96E;margin-bottom:8px;">TOTAL SPENT</div>
+      <div style="font-family:'Newsreader',serif;font-size:42px;font-weight:600;letter-spacing:-0.01em;">${formatSGD(totalSGD)}</div>
+      <div style="font-size:13px;color:#8A9BBF;margin-top:8px;">${count} expense${count !== 1 ? "s" : ""}${days > 0 ? " &nbsp;·&nbsp; " + days + " days" : ""}</div>
+    </div>
+
+    <!-- Stats row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr${dailyAvg > 0 ? " 1fr" : ""};gap:10px;margin-top:12px;">
+      <div style="background:#FFFDF8;border:1px solid #E7DECC;border-radius:14px;padding:14px;text-align:center;">
+        <div style="font-size:11px;color:#8A7B5C;font-weight:700;letter-spacing:0.06em;margin-bottom:6px;">PERSONAL</div>
+        <div style="font-family:'Newsreader',serif;font-size:18px;font-weight:600;color:#1B2A4A;">${formatSGD(personalSGD)}</div>
+      </div>
+      <div style="background:#FFFDF8;border:1px solid #E7DECC;border-radius:14px;padding:14px;text-align:center;">
+        <div style="font-size:11px;color:#8A7B5C;font-weight:700;letter-spacing:0.06em;margin-bottom:6px;">BUSINESS</div>
+        <div style="font-family:'Newsreader',serif;font-size:18px;font-weight:600;color:#1B2A4A;">${formatSGD(businessSGD)}</div>
+      </div>
+      ${dailyAvg > 0 ? `
+      <div style="background:#FFFDF8;border:1px solid #E7DECC;border-radius:14px;padding:14px;text-align:center;">
+        <div style="font-size:11px;color:#8A7B5C;font-weight:700;letter-spacing:0.06em;margin-bottom:6px;">PER DAY</div>
+        <div style="font-family:'Newsreader',serif;font-size:18px;font-weight:600;color:#1B2A4A;">${formatSGD(dailyAvg)}</div>
+      </div>` : ""}
+    </div>
+
+    <!-- By Category -->
+    <div class="section-label" style="margin-top:26px;margin-bottom:10px;">By Category</div>
+    <div id="sum-cat-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+
+    <!-- By Currency -->
+    <div class="section-label" style="margin-top:24px;margin-bottom:10px;">By Currency</div>
+    <div id="sum-cur-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+  `;
+
+  // Category rows
+  const catList = el.querySelector("#sum-cat-list");
+  if (!byCategory.length) {
+    catList.innerHTML = '<div class="muted" style="font-size:13px;padding:8px 0;">No expenses yet.</div>';
+  } else {
+    const max = byCategory[0].amt;
+    byCategory.forEach(({ cat, amt, meta }) => {
+      const pct = totalSGD > 0 ? Math.round((amt / totalSGD) * 100) : 0;
+      const row = document.createElement("div");
+      row.style.cssText = "background:#FFFDF8;border:1px solid #E7DECC;border-radius:14px;padding:14px 16px;";
+      row.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+          '<div style="display:flex;align-items:center;gap:8px;">' +
+            '<span style="font-size:20px;">' + (meta ? meta.emoji : '📌') + '</span>' +
+            '<span style="font-weight:600;font-size:14px;color:#1B2A4A;">' + (meta ? meta.label : cat) + '</span>' +
+          '</div>' +
+          '<div style="text-align:right;">' +
+            '<span style="font-weight:700;font-size:14px;color:#1B2A4A;">' + formatSGD(amt) + '</span>' +
+            '<span style="font-size:11px;color:#C9A96E;margin-left:6px;font-weight:700;">' + pct + '%</span>' +
+          '</div>' +
+        '</div>' +
+        '<div style="background:#E7DECC;border-radius:99px;height:6px;">' +
+          '<div style="background:#C9A96E;border-radius:99px;height:6px;width:' + Math.min(100, (amt/max)*100) + '%;transition:width 0.4s;"></div>' +
+        '</div>';
+      catList.appendChild(row);
+    });
+  }
+
+  // Currency rows
+  const curList = el.querySelector("#sum-cur-list");
+  const curEntries = Object.entries(byCurrency);
+  if (!curEntries.length) {
+    curList.innerHTML = '<div class="muted" style="font-size:13px;padding:8px 0;">No currency data yet.</div>';
+  } else {
+    curEntries.sort((a, b) => b[1].sgd - a[1].sgd).forEach(([code, v]) => {
+      const pct = totalSGD > 0 ? Math.round((v.sgd / totalSGD) * 100) : 0;
+      const row = document.createElement("div");
+      row.style.cssText = "background:#FFFDF8;border:1px solid #E7DECC;border-radius:14px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;";
+      row.innerHTML =
+        '<div>' +
+          '<div style="font-weight:700;font-size:14px;color:#1B2A4A;">' + code + '</div>' +
+          '<div style="font-size:12px;color:#8A7B5C;margin-top:2px;">' + v.foreign.toLocaleString() + ' ' + code + '</div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<div style="font-weight:700;font-size:14px;color:#1B2A4A;">' + formatSGD(v.sgd) + '</div>' +
+          '<div style="font-size:11px;color:#C9A96E;font-weight:700;">' + pct + '%</div>' +
+        '</div>';
+      curList.appendChild(row);
+    });
+  }
+
+  el.querySelector("#summary-back").onclick = () => { state.view = "dashboard"; render(); };
+  var spacer = document.createElement("div");
+  spacer.className = "bottom-nav__spacer";
+  el.appendChild(spacer);
+  el.appendChild(renderBottomNav("summary"));
+  return el;
+}
+
+
+// ============================================================
 // SETTINGS
 // ============================================================
 function renderSettings() {
@@ -783,6 +908,7 @@ function render() {
     case "history":  root.appendChild(renderHistory());    break;
     case "rates":    root.appendChild(renderRates());      break;
     case "settings": root.appendChild(renderSettings());   break;
+    case "summary":  root.appendChild(renderSummary());    break;
     default:         root.appendChild(renderDashboard());
   }
 }
