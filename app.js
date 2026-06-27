@@ -494,4 +494,4 @@ window.AppData = {
   updateExpense,
 };
 
-document.add
+document.addEventListener("DOMContentLoaded", init);
