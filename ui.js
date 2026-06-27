@@ -44,6 +44,9 @@ function render() {
     case "rates":
       root.appendChild(renderRates());
       break;
+    case "settings":
+      root.appendChild(renderSettings());
+      break;
     default:
       root.appendChild(renderDashboard());
   }
@@ -174,6 +177,7 @@ function renderDashboard() {
     </div>
     <div style="display:flex;gap:10px;margin-top:8px;">
       <button id="trips-btn" class="link-btn">Switch trip</button>
+      <button id="settings-btn" class="link-btn">⚙ Settings</button>
       <button id="signout-btn" class="link-btn">Sign out</button>
     </div>
 
@@ -214,6 +218,7 @@ function renderDashboard() {
   el.querySelector("#history-btn").onclick = () => { state.view = "history"; render(); };
   el.querySelector("#rates-btn").onclick = () => { state.view = "rates"; render(); };
   el.querySelector("#trips-btn").onclick = () => { state.view = "trips"; render(); };
+  el.querySelector("#settings-btn").onclick = () => { state.view = "settings"; render(); };
   el.querySelector("#signout-btn").onclick = () => window.AppData.signOut();
 
   return el;
@@ -566,6 +571,104 @@ function renderRates() {
   };
 
   el.querySelector("#rates-back").onclick = () => { state.view = "dashboard"; render(); };
+
+  return el;
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function renderSettings() {
+  const { state, signOut, exportCSV, installApp } = window.AppData;
+
+  const el = document.createElement("div");
+  el.className = "screen";
+  el.innerHTML = `
+    <div class="topbar" style="margin-bottom:24px;">
+      <button class="icon-btn" id="settings-back">←</button>
+      <div>
+        <div class="eyebrow">App</div>
+        <h2 class="serif-h2">Settings</h2>
+      </div>
+    </div>
+
+    <!-- Your Account -->
+    <div class="section-label" style="margin-bottom:10px;">Your Account</div>
+    <div style="background:#FFFDF8;border:1px solid #E7DECC;border-radius:14px;padding:14px 16px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:#1B2A4A;display:flex;align-items:center;justify-content:center;color:#C9A96E;font-weight:700;font-size:15px;">
+          ${escapeHtml((state.user?.email?.[0] || "?").toUpperCase())}
+        </div>
+        <div>
+          <div style="font-weight:600;font-size:14px;">${escapeHtml(state.user?.email || "")}</div>
+          <div class="muted" style="font-size:12px;">Signed in</div>
+        </div>
+      </div>
+      <button id="s-signout" class="btn btn--outline" style="width:100%;font-size:13.5px;padding:10px;">Sign out</button>
+    </div>
+
+    <!-- Data & App -->
+    <div class="section-label" style="margin-bottom:10px;">Data & App</div>
+    <div style="background:#FFFDF8;border:1px solid #E7DECC;border-radius:14px;overflow:hidden;margin-bottom:20px;">
+
+      <div class="settings-row" id="s-export">
+        <div class="settings-row__icon">📊</div>
+        <div class="settings-row__body">
+          <div class="settings-row__title">Export CSV</div>
+          <div class="settings-row__sub">Download all expenses as a spreadsheet</div>
+        </div>
+        <div class="settings-row__action">↓</div>
+      </div>
+
+      <div style="height:1px;background:#E7DECC;margin:0 16px;"></div>
+
+      <div class="settings-row" id="s-install">
+        <div class="settings-row__icon">📲</div>
+        <div class="settings-row__body">
+          <div class="settings-row__title">Install App</div>
+          <div class="settings-row__sub">Add to home screen for offline use</div>
+        </div>
+        <div class="settings-row__action">→</div>
+      </div>
+    </div>
+
+    <!-- Trip -->
+    <div class="section-label" style="margin-bottom:10px;">Trip</div>
+    <div style="background:#FFFDF8;border:1px solid #E7DECC;border-radius:14px;overflow:hidden;margin-bottom:20px;">
+      <div class="settings-row" id="s-rates">
+        <div class="settings-row__icon">💱</div>
+        <div class="settings-row__body">
+          <div class="settings-row__title">Exchange Rates</div>
+          <div class="settings-row__sub">Set fixed rates for ${escapeHtml(state.activeTrip?.trip_name || "this trip")}</div>
+        </div>
+        <div class="settings-row__action">→</div>
+      </div>
+      <div style="height:1px;background:#E7DECC;margin:0 16px;"></div>
+      <div class="settings-row" id="s-trips">
+        <div class="settings-row__icon">✈️</div>
+        <div class="settings-row__body">
+          <div class="settings-row__title">Manage Trips</div>
+          <div class="settings-row__sub">Switch or create a new trip</div>
+        </div>
+        <div class="settings-row__action">→</div>
+      </div>
+    </div>
+
+    <!-- About -->
+    <div class="section-label" style="margin-bottom:10px;">About</div>
+    <div style="background:#FFFDF8;border:1px solid #E7DECC;border-radius:14px;padding:16px;margin-bottom:8px;text-align:center;">
+      <div style="font-family:'Newsreader',serif;font-size:20px;font-weight:600;color:#1B2A4A;margin-bottom:4px;">Ryu Travel Tracker</div>
+      <div class="muted" style="font-size:12.5px;">Version 1.0 · Built by Cheong Wai Lung</div>
+      <div style="margin-top:6px;font-size:12px;color:#C9A96E;font-weight:600;letter-spacing:0.06em;">RYU SAKE JOURNAL® 酒の旅</div>
+    </div>
+  `;
+
+  el.querySelector("#settings-back").onclick = () => { state.view = "dashboard"; render(); };
+  el.querySelector("#s-signout").onclick = () => window.AppData.signOut();
+  el.querySelector("#s-export").onclick = () => window.AppData.exportCSV();
+  el.querySelector("#s-install").onclick = () => window.AppData.installApp();
+  el.querySelector("#s-rates").onclick = () => { state.view = "rates"; render(); };
+  el.querySelector("#s-trips").onclick = () => { state.view = "trips"; render(); };
 
   return el;
 }
