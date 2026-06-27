@@ -16,7 +16,7 @@ const CATEGORIES = [
   { id: "other", label: "Other", emoji: "📌" },
 ];
 
-const CURRENCY_PRESETS = ["JPY", "USD", "EUR", "GBP", "THB", "KRW", "AUD"];
+const CURRENCY_PRESETS = ["JPY", "USD", "EUR", "GBP", "THB", "KRW", "AUD", "TWD", "MYR"];
 
 let state = {
   user: null,

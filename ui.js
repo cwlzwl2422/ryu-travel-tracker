@@ -585,129 +585,74 @@ function makeCurrencyOptions(selected) {
 }
 
 function renderRates() {
-  const { state, formatSGD, saveTripRates } = window.AppData;
-  const saved = Object.keys(state.tripRates);
-  const firstCur = saved[0] || "JPY";
-  const savedRate = state.tripRates[firstCur] != null ? state.tripRates[firstCur] : null;
-
   const el = document.createElement("div");
   el.className = "screen";
+
+  const FLAGS = {JPY:"🇯🇵", USD:"🇺🇸", EUR:"🇪🇺",
+    GBP:"🇬🇧", THB:"🇹🇭", KRW:"🇰🇷",
+    AUD:"🇦🇺", TWD:"🇹🇼", MYR:"🇲🇾"
+  };
+  const NAMES = {
+    JPY:"Japanese Yen", USD:"US Dollar", EUR:"Euro",
+    GBP:"British Pound", THB:"Thai Baht", KRW:"Korean Won",
+    AUD:"Australian Dollar", TWD:"Taiwan Dollar", MYR:"Malaysian Ringgit"
+  };
+
   el.innerHTML = `
     <div class="topbar">
-      <button class="icon-btn" id="rates-back">←</button>
+      <button class="icon-btn" id="rates-back">&#8592;</button>
       <div>
-        <div class="eyebrow">\u{1F4B1} Trip Rates</div>
-        <h2 class="serif-h2">${state.activeTrip ? state.activeTrip.trip_name : "Set Rates"}</h2>
+        <div class="eyebrow">Trip Rates</div>
+        <h2 class="serif-h2">${state.activeTrip ? escapeHtml(state.activeTrip.trip_name) : "Set Rates"}</h2>
       </div>
     </div>
-
     <p style="font-size:13px;color:#8A7B5C;margin:14px 0 18px;">
-      Set fixed exchange rates for this trip. These auto-fill when you add expenses.
+      Enter the SGD value of 1 unit of each currency. Leave blank to skip.
     </p>
-
-    <!-- Converter card -->
-    <div class="rconv" id="rconv-card">
-      <div class="rconv__panel rconv__panel--from">
-        <div class="rconv__cap">From</div>
-        <div class="rconv__body">
-          <input class="rconv__amount-input" id="rc-from-amt" type="number" min="0" step="any" value="1" placeholder="100" />
-          <div class="rconv__cur-wrap">
-            <span class="rconv__flag" id="rc-flag">&#x1F1EF;&#x1F1F5;</span>
-            <select class="rconv__select" id="rc-cur">
-              ${makeCurrencyOptions(firstCur)}
-            </select>
-          </div>
-        </div>
-        <div class="rconv__preview" id="rc-preview"></div>
-      </div>
-
-      <div class="rconv__swap">⇄</div>
-
-      <div class="rconv__panel">
-        <div class="rconv__cap">To (SGD)</div>
-        <div class="rconv__body">
-          <input class="rconv__rate-input" id="rc-to-amt" type="number" min="0" step="any"
-            value="${savedRate != null ? savedRate : ""}" placeholder="0.0089" />
-          <div class="rconv__cur-wrap">
-            <span class="rconv__flag">&#x1F1F8;&#x1F1EC;</span>
-            <span class="rconv__sgd-label">SGD</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <button class="btn btn--primary" id="rc-save-btn" style="width:100%;margin-top:18px;">Save Rate</button>
-
-    ${saved.length ? `
-    <div style="margin-top:28px;">
-      <div class="section-label" style="margin-bottom:10px;">Saved Rates</div>
-      ${Object.entries(state.tripRates).map(([cur, rate]) => `
-        <div class="cur-row" style="margin-bottom:8px;">
-          <span class="rconv__flag">${CURRENCY_FLAGS[cur] || ""}</span>
-          <span class="cur-code" style="margin-left:6px;">${cur}</span>
-          <span style="color:#8A7B5C;font-size:12.5px;margin-left:4px;">${CURRENCY_NAMES[cur] || ""}</span>
-          <span style="margin-left:auto;font-family:'Newsreader',serif;font-size:15px;font-weight:600;color:#1B2A4A;">
-            1 ${cur} = ${formatSGD(rate)}
-          </span>
-        </div>
-      `).join("")}
-    </div>
-    ` : ""}
+    <div id="rate-rows" style="display:flex;flex-direction:column;gap:10px;"></div>
+    <button class="btn btn--primary" id="rc-save-btn" style="width:100%;margin-top:22px;">Save Rates</button>
   `;
 
-  // Wire currency select — auto-fill saved rate when switching currency
-  const curSelect = el.querySelector("#rc-cur");
-  const fromAmt   = el.querySelector("#rc-from-amt");
-  const toAmt     = el.querySelector("#rc-to-amt");
-  const flagSpan  = el.querySelector("#rc-flag");
-  const preview   = el.querySelector("#rc-preview");
-
-  function updateFlag() {
-    const cur = curSelect.value;
-    const flagMap = { JPY:"\u{1F1EF}\u{1F1F5}", USD:"\u{1F1FA}\u{1F1F8}", EUR:"\u{1F1EA}\u{1F1FA}", GBP:"\u{1F1EC}\u{1F1E7}", THB:"\u{1F1F9}\u{1F1ED}", KRW:"\u{1F1F0}\u{1F1F7}", AUD:"\u{1F1E6}\u{1F1FA}" };
-    flagSpan.textContent = flagMap[cur] || "";
-  }
-
-  function updatePreview() {
-    const from = parseFloat(fromAmt.value) || 0;
-    const to   = parseFloat(toAmt.value)   || 0;
-    if (!from || !to) { preview.textContent = ""; return; }
-    const rate = to / from;
-    const big  = 1000;
-    preview.textContent = `1 ${curSelect.value} = ${formatSGD(rate)} · ${big.toLocaleString()} ${curSelect.value} = ${formatSGD(rate * big)}`;
-  }
-
-  curSelect.addEventListener("change", () => {
-    updateFlag();
-    const cur = curSelect.value;
+  const container = el.querySelector("#rate-rows");
+  CURRENCY_PRESETS.forEach(cur => {
     const saved = state.tripRates[cur];
-    if (saved != null) {
-      fromAmt.value = "1";
-      toAmt.value   = String(saved);
-    } else {
-      toAmt.value = "";
-    }
-    updatePreview();
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:center;gap:10px;background:#FFFDF8;border:1px solid #E7DECC;border-radius:12px;padding:12px 14px;";
+    const flag = FLAGS[cur] || "";
+    const name = NAMES[cur] || "";
+    const val  = saved != null ? saved : "";
+    row.innerHTML =
+      "<span style=\"font-size:22px;line-height:1;\">" + flag + "</span>" +
+      "<div style=\"flex:1;min-width:0;\">" +
+        "<div style=\"font-weight:700;font-size:13px;color:#1B2A4A;\">" + cur + "</div>" +
+        "<div style=\"font-size:11px;color:#8A7B5C;\">" + name + "</div>" +
+      "</div>" +
+      "<div style=\"display:flex;align-items:center;gap:6px;\">" +
+        "<span style=\"font-size:12px;color:#8A7B5C;white-space:nowrap;\">1 " + cur + " =</span>" +
+        "<input data-cur=\"" + cur + "\" type=\"number\" min=\"0\" step=\"any\" class=\"input rate-input\"" +
+          " value=\"" + val + "\" placeholder=\"0.00\"" +
+          " style=\"width:90px;padding:8px 10px;text-align:right;font-size:14px;margin:0;\" />" +
+        "<span style=\"font-size:12px;color:#8A7B5C;\">SGD</span>" +
+      "</div>";
+    container.appendChild(row);
   });
 
-  fromAmt.addEventListener("input", updatePreview);
-  toAmt.addEventListener("input",   updatePreview);
-
-  updateFlag();
-  updatePreview();
-
-  el.querySelector("#rc-save-btn").onclick = () => {
-    const from = parseFloat(fromAmt.value);
-    const to   = parseFloat(toAmt.value);
-    if (!from || !to) { alert("Enter both amounts."); return; }
-    const rate = to / from; // normalise to per-1 foreign unit
-    const rates = {};
-    rates[curSelect.value] = rate;
+  el.querySelector("#rc-save-btn").onclick = function() {
+    var rates = {};
+    el.querySelectorAll(".rate-input").forEach(function(inp) {
+      var v = parseFloat(inp.value);
+      if (v > 0) rates[inp.dataset.cur] = v;
+    });
+    if (!Object.keys(rates).length) { alert("Enter at least one rate."); return; }
     window.AppData.saveTripRates(rates);
   };
 
-  el.querySelector("#rates-back").onclick = () => { state.view = "dashboard"; render(); };
+  el.querySelector("#rates-back").onclick = function() { state.view = "dashboard"; render(); };
 
+  var spacer = document.createElement("div");
+  spacer.className = "bottom-nav__spacer";
+  el.appendChild(spacer);
+  el.appendChild(renderBottomNav("rates"));
   return el;
 }
 
