@@ -53,6 +53,34 @@ function render() {
 }
 window.render = render; // app.js calls this after state changes
 
+// ── Bottom navigation (persistent across all main screens) ──
+function renderBottomNav(activeView) {
+  const nav = document.createElement("div");
+  nav.className = "bottom-nav";
+  const items = [
+    { view: "dashboard", icon: "🏠", label: "Home" },
+    { view: "add",       icon: "➕", label: "Add" },
+    { view: "history",   icon: "📋", label: "History" },
+    { view: "settings",  icon: "⚙️",  label: "Settings" },
+  ];
+  nav.innerHTML = items.map(it => `
+    <button class="bottom-nav__item${it.view === activeView ? " bottom-nav__item--active" : ""}" data-view="${it.view}">
+      <span class="bottom-nav__icon">${it.icon}</span>
+      <span>${it.label}</span>
+    </button>
+  `).join("");
+  nav.querySelectorAll(".bottom-nav__item").forEach(btn => {
+    btn.onclick = () => {
+      const v = btn.dataset.view;
+      if (v === "add") { state.scanResult = null; }
+      state.view = v;
+      render();
+    };
+  });
+  return nav;
+}
+
+
 // ============================================================
 // LOGIN
 // ============================================================
@@ -221,6 +249,8 @@ function renderDashboard() {
   el.querySelector("#settings-btn").onclick = () => { state.view = "settings"; render(); };
   el.querySelector("#signout-btn").onclick = () => window.AppData.signOut();
 
+  el.appendChild(document.createElement("div")).className = "bottom-nav__spacer";
+  el.appendChild(renderBottomNav("dashboard"));
   return el;
 }
 
@@ -263,6 +293,9 @@ function renderHistory() {
     list.appendChild(row);
   });
   el.querySelector("#back-btn").onclick = () => { state.view = "dashboard"; render(); };
+  const hSpacer = document.createElement("div"); hSpacer.className = "bottom-nav__spacer";
+  el.appendChild(hSpacer);
+  el.appendChild(renderBottomNav("history"));
   return el;
 }
 
@@ -671,5 +704,8 @@ function renderSettings() {
   el.querySelector("#s-rates").onclick = () => { state.view = "rates"; render(); };
   el.querySelector("#s-trips").onclick = () => { state.view = "trips"; render(); };
 
+  const settingsSpacer = document.createElement("div"); settingsSpacer.className = "bottom-nav__spacer";
+  el.appendChild(settingsSpacer);
+  el.appendChild(renderBottomNav("settings"));
   return el;
 }

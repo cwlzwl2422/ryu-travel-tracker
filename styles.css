@@ -147,3 +147,22 @@ html, body {
 .settings-row__title { font-size: 14.5px; font-weight: 600; color: #1B2A4A; }
 .settings-row__sub { font-size: 12px; color: #8A7B5C; margin-top: 2px; }
 .settings-row__action { font-size: 16px; color: #C9A96E; font-weight: 700; flex-shrink: 0; }
+
+/* ── Bottom navigation bar ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 460px;
+  background: #1B2A4A; display: flex; align-items: stretch;
+  box-shadow: 0 -2px 12px rgba(27,42,74,0.18);
+  z-index: 100;
+}
+.bottom-nav__item {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px; padding: 10px 4px 12px;
+  cursor: pointer; background: none; border: none; color: #8A9BBF;
+  font-family: inherit; font-size: 10px; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase;
+}
+.bottom-nav__item--active { color: #C9A96E; }
+.bottom-nav__icon { font-size: 20px; line-height: 1; }
+.bottom-nav__spacer { height: 68px; } /* prevents content hiding behind nav */
