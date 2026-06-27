@@ -657,9 +657,10 @@ function renderSettings() {
     <!-- About -->
     <div class="section-label" style="margin-bottom:10px;">About</div>
     <div style="background:#FFFDF8;border:1px solid #E7DECC;border-radius:14px;padding:16px;margin-bottom:8px;text-align:center;">
-      <div style="font-family:'Newsreader',serif;font-size:20px;font-weight:600;color:#1B2A4A;margin-bottom:4px;">Ryu Travel Tracker</div>
+      <div style="font-family:'Newsreader',serif;font-size:22px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">RYU Travel Expenses</div>
+      <div style="font-size:12px;color:#C9A96E;font-weight:700;letter-spacing:0.07em;margin-bottom:8px;">RYU SAKE JOURNAL® · 酒の旅</div>
       <div class="muted" style="font-size:12.5px;">Version 1.0 · Built by Cheong Wai Lung</div>
-      <div style="margin-top:6px;font-size:12px;color:#C9A96E;font-weight:600;letter-spacing:0.06em;">RYU SAKE JOURNAL® 酒の旅</div>
+      <div class="muted" style="font-size:12px;margin-top:4px;">Singapore · Travel Expense Tracker</div>
     </div>
   `;
 
