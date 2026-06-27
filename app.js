@@ -25,10 +25,11 @@ let state = {
   expenses: [],
   lastRates: {}, // { JPY: 0.0089, ... } — most recently used rate per currency, this session
   tripRates: {}, // { JPY: 0.0089, ... } — fixed rates saved for the whole trip
-  view: "login", // login | dashboard | add | history | trips | rates
+  view: "login", // login | dashboard | add | history | trips | rates | settings
   scanning: false,
   scanResult: null,
   pendingPhotoFile: null,
+  editingExpense: null, // expense object being edited
 };
 
 // ============================================================
@@ -351,6 +352,45 @@ function fileToBase64(file) {
   });
 }
 
+
+// ============================================================
+// UPDATE EXPENSE (edit existing)
+// ============================================================
+async function updateExpense(id, form) {
+  const foreignAmount = parseFloat(form.foreignAmount);
+  const rate = parseFloat(form.rate);
+  if (!foreignAmount || !rate) return;
+  const homeAmount = Math.round(foreignAmount * rate * 100) / 100;
+
+  let receiptUrl = form.receiptUrl || null;
+  if (state.pendingPhotoFile) {
+    receiptUrl = await uploadReceiptPhoto(state.pendingPhotoFile);
+  }
+
+  const { error } = await supabaseClient.from("expenses").update({
+    expense_date:        form.date,
+    category:            form.category,
+    description:         form.notes || null,
+    merchant_name:       form.merchant || null,
+    foreign_amount:      foreignAmount,
+    foreign_currency:    form.currency,
+    exchange_rate:       rate,
+    home_amount:         homeAmount,
+    payment_method:      form.paymentMethod || null,
+    is_business_expense: !!form.business,
+    receipt_image_url:   receiptUrl,
+  }).eq("id", id);
+
+  if (error) { alert("Could not update expense: " + error.message); return; }
+
+  state.pendingPhotoFile = null;
+  state.scanResult       = null;
+  state.editingExpense   = null;
+  await loadExpenses(state.activeTrip.id);
+  state.view = "history";
+  render();
+}
+
 // ============================================================
 // DERIVED DATA
 // ============================================================
@@ -406,6 +446,9 @@ window.AppData = {
   CURRENCY_PRESETS,
   saveTripRates,
   loadTripRates,
+  exportCSV,
+  installApp,
+  updateExpense,
 };
 
 document.addEventListener("DOMContentLoaded", init);

@@ -258,20 +258,58 @@ function renderDashboard() {
 // HISTORY
 // ============================================================
 function renderHistory() {
+  let selectedId = null;
+
   const el = document.createElement("div");
   el.className = "screen";
   el.innerHTML = `
     <div class="topbar">
       <button id="back-btn" class="icon-btn">←</button>
       <h2 class="serif-h2">All expenses</h2>
+      <span class="muted" style="font-size:12.5px;margin-left:auto;">Tap to select</span>
     </div>
     <div id="history-list" style="margin-top:18px;display:flex;flex-direction:column;gap:10px;"></div>
+    <!-- Action bar (shown when row selected) -->
+    <div id="action-bar" style="display:none;position:fixed;bottom:68px;left:50%;transform:translateX(-50%);
+      width:calc(100% - 40px);max-width:420px;background:#1B2A4A;border-radius:16px;
+      padding:12px 16px;display:none;align-items:center;justify-content:space-between;
+      box-shadow:0 4px 20px rgba(0,0,0,0.25);z-index:99;">
+      <span id="action-label" style="color:#C9A96E;font-size:13px;font-weight:600;"></span>
+      <div style="display:flex;gap:10px;">
+        <button id="action-edit" class="btn btn--small" style="background:#C9A96E;color:#1B2A4A;">✏️ Edit</button>
+        <button id="action-delete" class="btn btn--small" style="background:#B5453F;color:#fff;">🗑 Delete</button>
+        <button id="action-cancel" class="btn btn--small" style="background:#56607D;">✕</button>
+      </div>
+    </div>
   `;
+
   const list = el.querySelector("#history-list");
+  const actionBar = el.querySelector("#action-bar");
+  const actionLabel = el.querySelector("#action-label");
+
+  function selectRow(id) {
+    // Deselect all
+    list.querySelectorAll(".history-row").forEach(r => r.classList.remove("history-row--selected"));
+    if (selectedId === id) {
+      // Tap again = deselect
+      selectedId = null;
+      actionBar.style.display = "none";
+      return;
+    }
+    selectedId = id;
+    const selected = state.expenses.find(e => e.id === id);
+    // Highlight selected row
+    list.querySelector(`[data-id="${id}"]`)?.classList.add("history-row--selected");
+    actionLabel.textContent = escapeHtml(selected?.merchant_name || "Expense");
+    actionBar.style.display = "flex";
+  }
+
   state.expenses.forEach((e) => {
     const meta = CATEGORIES.find((c) => c.id === e.category);
     const row = document.createElement("div");
     row.className = "history-row";
+    row.dataset.id = e.id;
+    row.style.cursor = "pointer";
     row.innerHTML = `
       <div class="history-row__emoji">${meta?.emoji || "📌"}</div>
       <div style="flex:1">
@@ -282,16 +320,37 @@ function renderHistory() {
         <div class="muted" style="font-size:12.5px;margin-top:2px;">
           ${new Date(e.expense_date).toLocaleDateString("en-SG", { month: "short", day: "numeric" })}
           &nbsp;·&nbsp;<span class="num">${Number(e.foreign_amount).toLocaleString()} ${e.foreign_currency}</span>
-          &nbsp;·&nbsp;rate <span class="num">${e.exchange_rate}</span>
-          ${e.is_business_expense ? '&nbsp;·&nbsp;<span class="gold" style="font-weight:700;">Business</span>' : ""}
+          &nbsp;·&nbsp;<span class="num">${e.foreign_currency === "SGD" ? "" : "rate " + e.exchange_rate}</span>
+          ${e.is_business_expense ? '&nbsp;·&nbsp;<span class="gold" style="font-weight:700;">Biz</span>' : ""}
         </div>
-        ${e.description ? `<div class="muted" style="font-size:12.5px;margin-top:3px;">${escapeHtml(e.description)}</div>` : ""}
-        <button class="link-btn link-btn--danger" data-id="${e.id}" style="margin-top:4px;">Delete</button>
+        ${e.description ? `<div class="muted" style="font-size:12.5px;margin-top:2px;">${escapeHtml(e.description)}</div>` : ""}
       </div>
+      <div style="width:10px;height:10px;border-radius:50%;background:transparent;border:1.5px solid #E7DECC;flex-shrink:0;" class="row-dot"></div>
     `;
-    row.querySelector("button").onclick = () => window.AppData.deleteExpense(e.id);
+    row.onclick = () => selectRow(e.id);
     list.appendChild(row);
   });
+
+  if (!state.expenses.length) {
+    list.innerHTML = `<div class="muted" style="text-align:center;padding:40px 0;font-size:14px;">No expenses yet.<br>Tap + Add to get started.</div>`;
+  }
+
+  el.querySelector("#action-edit").onclick = () => {
+    const exp = state.expenses.find(e => e.id === selectedId);
+    if (!exp) return;
+    state.editingExpense = exp;
+    state.view = "add";
+    render();
+  };
+  el.querySelector("#action-delete").onclick = () => {
+    if (selectedId) window.AppData.deleteExpense(selectedId);
+  };
+  el.querySelector("#action-cancel").onclick = () => {
+    selectedId = null;
+    list.querySelectorAll(".history-row").forEach(r => r.classList.remove("history-row--selected"));
+    actionBar.style.display = "none";
+  };
+
   el.querySelector("#back-btn").onclick = () => { state.view = "dashboard"; render(); };
   const hSpacer = document.createElement("div"); hSpacer.className = "bottom-nav__spacer";
   el.appendChild(hSpacer);
@@ -303,19 +362,21 @@ function renderHistory() {
 // ADD EXPENSE
 // ============================================================
 function renderAddExpense() {
+  const editing = state.editingExpense;
   const form = {
-    merchant: state.scanResult?.merchant || "",
-    category: state.scanResult?.category_guess || "food",
-    foreignAmount: state.scanResult?.amount ? String(state.scanResult.amount) : "",
-    currency: state.scanResult?.currency || "JPY",
-    rate: "",
-    business: false,
-    notes: "",
-    date: state.scanResult?.date || new Date().toISOString().slice(0, 10),
-    paymentMethod: "",
-    ocrRawText: state.scanResult?.raw_text || "",
+    merchant:     editing ? (editing.merchant_name || "") : (state.scanResult?.merchant || ""),
+    category:     editing ? editing.category : (state.scanResult?.category_guess || "food"),
+    foreignAmount:editing ? String(editing.foreign_amount) : (state.scanResult?.amount ? String(state.scanResult.amount) : ""),
+    currency:     editing ? editing.foreign_currency : (state.scanResult?.currency || "JPY"),
+    rate:         editing ? String(editing.exchange_rate) : "",
+    business:     editing ? !!editing.is_business_expense : false,
+    notes:        editing ? (editing.description || "") : "",
+    date:         editing ? editing.expense_date : (state.scanResult?.date || new Date().toISOString().slice(0, 10)),
+    paymentMethod:editing ? (editing.payment_method || "") : "",
+    ocrRawText:   editing ? "" : (state.scanResult?.raw_text || ""),
+    receiptUrl:   editing ? (editing.receipt_image_url || null) : null,
   };
-  if (state.lastRates[form.currency]) form.rate = String(state.lastRates[form.currency]);
+  if (!editing && state.lastRates[form.currency]) form.rate = String(state.lastRates[form.currency]);
 
   const el = document.createElement("div");
   el.className = "screen";
@@ -399,6 +460,7 @@ function renderAddExpense() {
   const currencySelect = el.querySelector("#f-currency");
   const computedEl = el.querySelector("#ticket-computed");
   const saveBtn = el.querySelector("#save-btn");
+  if (editing) saveBtn.textContent = "Save changes";
   const rateLabel = el.querySelector("#rate-label");
 
   function updateComputed() {
@@ -443,10 +505,10 @@ function renderAddExpense() {
     // render() is called inside scanReceipt; renderAddExpense will be re-invoked with scanResult populated
   };
 
-  el.querySelector("#back-btn").onclick = () => { state.view = "dashboard"; render(); };
+  el.querySelector("#back-btn").onclick = () => { state.editingExpense = null; state.view = editing ? "history" : "dashboard"; render(); };
 
   saveBtn.onclick = () => {
-    window.AppData.saveExpense({
+    const payload = {
       merchant: el.querySelector("#f-merchant").value.trim(),
       category: selectedCategory,
       foreignAmount: amountInput.value,
@@ -456,7 +518,13 @@ function renderAddExpense() {
       notes: el.querySelector("#f-notes").value.trim(),
       date: el.querySelector("#f-date").value,
       ocrRawText: form.ocrRawText,
-    });
+      receiptUrl: form.receiptUrl,
+    };
+    if (editing) {
+      window.AppData.updateExpense(editing.id, payload);
+    } else {
+      window.AppData.saveExpense(payload);
+    }
   };
 
   return el;
