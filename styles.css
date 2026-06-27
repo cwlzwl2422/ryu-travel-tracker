@@ -164,7 +164,8 @@ html, body {
   letter-spacing: 0.04em; text-transform: uppercase;
 }
 .bottom-nav__item--active { color: #C9A96E; }
-.bottom-nav__icon { font-size: 20px; line-height: 1; }
+.bottom-nav__icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
+.bottom-nav__icon svg { width: 22px; height: 22px; }
 .bottom-nav__spacer { height: 68px; } /* prevents content hiding behind nav */
 
 /* ── History row selection ── */
